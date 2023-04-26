@@ -1,0 +1,31 @@
+Param(
+  [string]$organizationUrl = "https://dev.azure.com/{your-organization-name}",
+  [string]$projectName = "{your-project-name}",
+  [string]$repositoryName = "{your-repository-name}",
+  [string]$branchName = "{name-of-existing-branch-to-add-to-searchable-branches}"
+)
+
+# Authenticate to Azure DevOps using a PAT
+$pat = "{your-personal-access-token}"
+$token = [System.Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes(":$($pat)"))
+$headers = @{
+  Authorization = "Basic $token"
+  'Content-Type' = 'application/json'
+}
+
+# Get the ID of the branch
+$branchUrl = "$organizationUrl/$projectName/_apis/git/repositories/$repositoryName/refs?filter=heads%2F$branchName&api-version=6.0"
+$branchId = (Invoke-RestMethod -Uri $branchUrl -Headers $headers).value[0].objectId
+
+# Add the branch to the searchable branch list
+$url = "$organizationUrl/$projectName/_apis/git/repositories/$repositoryName/options?api-version=6.0"
+$body = @{
+  defaultBranch = "refs/heads/$branchName"
+  additionalRefUpdates = @(
+    @{
+      name = "refs/heads/$branchName"
+      oldObjectId = $branchId
+    }
+  )
+}
+Invoke-RestMethod -Uri $url -Headers $headers -Method Patch -Body (ConvertTo-Json $body)
