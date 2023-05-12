@@ -1,0 +1,34 @@
+trigger:
+  branches:
+    exclude:
+      - '*'
+
+pr:
+  branches:
+    exclude:
+      - '*'
+
+jobs:
+  - job: Test
+    displayName: 'Run Tests'
+    pool:
+      vmImage: 'windows-latest'
+
+    steps:
+      - task: NodeTool@0
+        inputs:
+          versionSpec: '18.x'
+        displayName: 'Install Node.js'
+
+      - script: |
+          node --version
+          npm --version
+        displayName: 'Display Node.js and npm versions'
+
+      - checkout: self
+
+      - script: |
+          cd path/to/your/project
+          npm ci
+          npm test
+        displayName: 'Run tests'
